@@ -14,7 +14,7 @@ openai_api_key = os.getenv("OPENAI_API_KEY")
 client = OpenAI(api_key=openai_api_key)
 
 # Agent creation
-from run_old import create_agent
+from HistoryDeepResearch.smolagents_project_root.examples.open_deep_research.run_old import create_agent
 
 class StreamCapture:
     def __init__(self, thinking_container):

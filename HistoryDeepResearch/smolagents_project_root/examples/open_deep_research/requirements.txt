@@ -34,6 +34,7 @@ easyocr>=1.7.1
 translate>=3.6.1  
 langchain-core
 playwright
+browser-use
 posthog   
 langchain-openai
 chess

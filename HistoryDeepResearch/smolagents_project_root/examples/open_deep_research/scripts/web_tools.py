@@ -184,7 +184,7 @@ HANDLING EXACTMATCH QUESTIONS:
             agent = Agent(
                 task=task, 
                 llm=llm, 
-                browser=browser, 
+                # browser=browser, 
                 generate_gif=False,
                 extend_system_message=self.system_prompt
             )
@@ -267,14 +267,17 @@ HANDLING EXACTMATCH QUESTIONS:
                     result = action.extracted_content
                     print("result", result)
                     print("type", type(result))
+                    result = json.loads(result)
+                    print("result", result)
+                    print("type", type(result))
             # Extract URL from the browser result
-            url_pattern = r'URL: (https?://[^\s]+)'
-            url_match = re.search(url_pattern, result[-2])
+            # url_pattern = r'URL: (https?://[^\s]+)'
+            # url_match = re.search(url_pattern, result["search_url"])
             
-            if not url_match:
+            if not result["book_matches_found"]:
                 return "No URL found in search results", []
             
-            search_url = url_match.group(1)
+            search_url = result["search_url"]
             logging.info(f"Found search URL: {search_url}")
             
             # Now fetch and parse the HTML from the URL
@@ -288,75 +291,71 @@ HANDLING EXACTMATCH QUESTIONS:
                     'Upgrade-Insecure-Requests': '1',
                     'Cache-Control': 'max-age=0'
                 }
-                
+                # print("step1", search_url)
                 response = requests.get(search_url, headers=headers)
                 response.raise_for_status()  # Raise exception for HTTP errors
-                
+                # print("step2", response.text)
                 # Parse the HTML content
                 soup = BeautifulSoup(response.text, 'html.parser')
+                # print("step3", soup)
+                # Save soup to a test file for debugging
+                # with open("./soup_test_output.html", "w", encoding="utf-8") as f:
+                #     f.write(str(soup))
                 
-                # Find the book matches section
-                book_matches_div = soup.find('div', class_='VNSPub', string='在书中找到匹配结果')
-                
-                if not book_matches_div:
-                    return search_url, []
-                
-                # Get the parent div that contains both the section header and the content
-                parent_div = book_matches_div.find_parent('div', class_='cmlJmd ETWPw')
-                
-                if not parent_div:
-                    return search_url, []
-                
-                # Extract all span elements that follow the VNSPub div, which contain the snippets
-                spans = parent_div.find_all('span')
+                # Find all container elements with class="bHexk Tz5Hvf" as in test.py
+                containers = soup.find_all('div', class_='bHexk Tz5Hvf')
                 
                 book_matches = []
-                current_match = {}
-                
-                # Process each span to extract the text and highlighted parts
-                for span in spans:
-                    if 'VNSPub' in span.get('class', []):
-                        continue  # Skip the header span
-                        
-                    # Get text content with <em> tags preserved
-                    snippet_html = str(span)
-                    snippet_text = span.get_text()
+                for container in containers:
+                    # Try to find the title and content within this container
+                    title_elem = container.find('h3', class_=lambda c: c and 'LC20lb' in c)
+                    vnspub_elem = container.find('div', class_='VNSPub')
                     
-                    # Extract highlighted parts (text inside <em> tags)
-                    em_tags = span.find_all('em')
-                    highlights = [em.get_text() for em in em_tags]
-                    
-                    # Check if this spans contains book title information
-                    if span.find('a'):
-                        # This might be a book title with link
-                        book_link = span.find('a').get('href', '')
-                        book_title = span.find('a').get_text()
+                    # Only proceed if we found both elements
+                    if title_elem and vnspub_elem:
+                        book_title = title_elem.get_text(strip=True)
                         
-                        # Start a new book match entry
-                        if current_match and 'snippet_html' in current_match:
-                            book_matches.append(current_match)
+                        # Find the span after VNSPub that contains the content
+                        content_span = vnspub_elem.find_next_sibling('span')
+                        if content_span:
+                            content_text = content_span.get_text(strip=False)
                             
-                        current_match = {
-                            'book_title': book_title,
-                            'book_link': book_link
-                        }
-                    elif snippet_text and snippet_text.strip():
-                        # This is a text snippet
-                        if not current_match:
-                            current_match = {}
-                        
-                        current_match['snippet_html'] = snippet_html
-                        current_match['snippet_text'] = snippet_text
-                        current_match['highlights'] = highlights
-                        
-                        # Add to book matches if we have all the key components
-                        if 'snippet_html' in current_match:
-                            book_matches.append(current_match)
-                            current_match = {}
+                            # Create book match entry with the same structure as original code
+                            book_match = {
+                                'title': book_title,
+                                'heading': vnspub_elem.get_text(strip=True),
+                                'content': content_text
+                            }
+                            
+                            book_matches.append(book_match)
                 
-                # Add the last match if it wasn't added yet
-                if current_match and 'snippet_html' in current_match:
-                    book_matches.append(current_match)
+                print(f"Found {len(book_matches)} book matches")
+                
+                for result in book_matches:
+                    print(f"\nTitle: {result['title']}")
+                    print(f"Heading: {result['heading']}")
+                    print(f"Content: {result['content']}")
+                    print('-' * 50)
+                
+                # If no results were found, provide debugging information
+                if not book_matches:
+                    print("No matching elements found in the HTML.")
+                    
+                    # Check if the container class exists at all
+                    alt_containers = soup.find_all('div', class_=lambda c: c and 'bHexk' in (c.split() if c else []))
+                    if alt_containers:
+                        print(f"Found {len(alt_containers)} containers with 'bHexk' in class name.")
+                    
+                    # Show what classes actually exist for potential containers
+                    common_classes = {}
+                    for div in soup.find_all('div', class_=True):
+                        for class_name in div.get('class', []):
+                            common_classes[class_name] = common_classes.get(class_name, 0) + 1
+                    
+                    print("\nMost common div classes in the document:")
+                    sorted_classes = sorted(common_classes.items(), key=lambda x: x[1], reverse=True)
+                    for class_name, count in sorted_classes[:10]:  # Top 10 classes
+                        print(f"  {class_name}: {count} occurrences")
                 
                 return search_url, book_matches
                 
@@ -1234,7 +1233,7 @@ class RelevantLiteratureFinderTool(Tool):
             agent = Agent(
                 task=search_task, 
                 llm=llm, 
-                browser=browser, 
+                # browser=browser, 
                 generate_gif=False,
                 extend_system_message=self.system_prompt
             )

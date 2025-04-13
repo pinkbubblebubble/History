@@ -176,7 +176,7 @@ def create_agent(model_id="o1"):
         SaveHTMLTool(browser_image),
     ]
 
-     LITERATURE_SEARCH_TOOLS = [
+    LITERATURE_SEARCH_TOOLS = [
         LiteratureSearchingTool(api_key=os.getenv("OPENAI_API_KEY"), download_path="downloads_folder"),
         GeneralBrowserTool(api_key=os.getenv("OPENAI_API_KEY"), download_path="downloads_folder"),
         RelevantLiteratureFinderTool(api_key=os.getenv("OPENAI_API_KEY"), download_path="downloads_folder"),

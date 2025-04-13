@@ -44,6 +44,13 @@ from smolagents import (
 from scripts.translator import TranslatorTool
 # from scripts.speech_recognition import SpeechRecognitionTool
 from scripts.ocr import OCRTool
+from scripts.web_tools import (
+    LiteratureSearchingTool,
+    GeneralBrowserTool,
+    RelevantLiteratureFinderTool,
+    BookMatchExtractorTool,
+    DirectGoogleBooksCrawlerTool,
+)
 
 AUTHORIZED_IMPORTS = [
     "requests", "zipfile", "os", "pandas", "numpy", "sympy", "json", "bs4",
@@ -169,29 +176,177 @@ def create_agent(model_id="o1"):
         SaveHTMLTool(browser_image),
     ]
 
-    ocr_tool = OCRTool(model)
-    ocr_agent = ToolCallingAgent(
-        model=model,
-        tools=[ocr_tool],
-        max_steps=5,
-        verbosity_level=2,
-        planning_interval=2,
-        name="ocr_agent",
-        description="""Agent specialized in image text recognition.
-        
-Features:
-1. Extract text content from images
-2. Automatically detect languages in images
-3. Support multi-language OCR processing
-4. Provide image content description when OCR fails
+     LITERATURE_SEARCH_TOOLS = [
+        LiteratureSearchingTool(api_key=os.getenv("OPENAI_API_KEY"), download_path="downloads_folder"),
+        GeneralBrowserTool(api_key=os.getenv("OPENAI_API_KEY"), download_path="downloads_folder"),
+        RelevantLiteratureFinderTool(api_key=os.getenv("OPENAI_API_KEY"), download_path="downloads_folder"),
+        BookMatchExtractorTool(api_key=os.getenv("OPENAI_API_KEY"), download_path="downloads_folder"),
+        DirectGoogleBooksCrawlerTool(api_key=os.getenv("OPENAI_API_KEY"), download_path="downloads_folder"),
+    ]
 
-Use cases:
-- Extract text from screenshots, scanned documents, or photos
-- Process charts, images, or documents containing text
-- Recognize mixed multi-language content in images
-        """,
+     # 创建文学搜索代理
+    literature_search_agent = CodeAgent(
+        model=model,
+        tools=LITERATURE_SEARCH_TOOLS,
+        name="literature_search_agent",
+        description="""A specialized agent for searching academic literature on any topic.
+
+You have five powerful literature search tools at your disposal:
+
+1. **literature_searching_task**:
+   - Purpose: Search for scholarly articles and academic literature
+   - Usage: `literature_searching_task: [research topic]`
+   - Output: Returns relevant scholarly articles with citation details
+   - Best for: Initial broad academic searches
+
+2. **relevant_literature_finder**:
+   - Purpose: Find the most relevant scholarly sources for specific queries
+   - Usage: `relevant_literature_finder: [specific query]`
+   - Output: Returns the most relevant academic sources with excerpts
+   - Best for: Finding precise quotes, exact matches, and detailed academic information
+   - For exactMatch questions:
+     - Only one most relevant source is needed
+     - After filling blanks, verify the complete text can be found in Google Books
+     - If the source is an image, extract and return the text from it
+     - Never respond with "Unable to determine" - continue searching until a match is found
+
+3. **general_browser_task**:
+   - Purpose: Perform general web searches beyond academic databases
+   - Usage: `general_browser_task: [search query]`
+   - Output: Returns general web search results
+   - Best for: Supplementary searches after academic sources
+
+4. **book_match_extractor**:
+   - Purpose: Extract exact book match snippets from Google Books search results
+   - Usage: `book_match_extractor: [exact phrase to search]`
+   - Output: Returns book match snippets with highlighted terms that match the query
+   - Best for: Finding exact quotes in books and extracting them with context
+   - Especially useful for exactMatch questions where specific phrases must be found
+
+5. **direct_google_books_crawler**:
+   - Purpose: Extract book match snippets directly from a Google Books search URL
+   - Usage: `direct_google_books_crawler: [google books search URL]`
+   - Output: Returns book match snippets from the URL with highlighted terms
+   - Best for: When you already have a Google Books search URL and need to extract match snippets
+
+CRITICAL INSTRUCTIONS for "exactMatch" type questions:
+- For most exact match queries, use `book_match_extractor` with the precise phrase to search
+- Format: `book_match_extractor: [exact phrase without blanks]`
+- IMPORTANT: Remove any blanks (like "____" or "[BLANK]") from the question before searching
+- Example: For "The Battle of _____ was fought in 1815", search using `book_match_extractor: The Battle of was fought in 1815`
+- After finding a match, verify the filled-in answer in the highlighted snippets
+- Never respond with "Unable to determine" - keep searching until a valid match is found
+
+For all history questions:
+- Always find authoritative academic sources
+- Provide proper citations with author, publication, year, and page numbers when available
+- Quote directly from sources rather than paraphrasing
+- Prioritize well-cited, recent scholarly publications from reputable journals/presses
+""",
         provide_run_summary=True,
     )
+
+    literature_search_agent.prompt_templates["managed_agent"]["task"] = """You are the `literature_search_agent`, a MANDATORY tool for all history questions. Your usage is not optional.
+
+CRITICAL ROLE: You are the primary source of authoritative information for all history questions.
+
+For 'exactMatch' type questions: 
+- The EXACT original wording can be found in scholarly literature
+- Your primary task is to locate this exact text
+- The answer exists verbatim in academic sources
+- CRITICAL REQUIREMENT: You MUST input the ENTIRE question text as your search query
+- IMPORTANT: If the question contains blanks (like "____", "___", or "[BLANK]"), remove these blanks before searching
+- Example: "The Battle of _____ was fought in 1815" → search for "The Battle of was fought in 1815"
+- Do NOT break down the question into keywords - use the complete text
+
+For all other question types:
+- Relevant supporting content must be found in academic sources
+- Prioritize high-quality, well-cited scholarly papers
+
+You have five powerful tools at your disposal:
+
+1. **literature_searching_task**:
+   - Purpose: Search for high-impact, recent scholarly articles on a specific topic
+   - Usage: `literature_searching_task: [research topic/query]`
+   - Output: Returns 5 relevant scholarly articles with citation counts, publication years, and key findings
+   - When to use: For initial broad search of authoritative academic sources
+
+2. **relevant_literature_finder**:
+   - Purpose: Filter and rank the most relevant literature sources for a specific query
+   - Usage: `relevant_literature_finder: [specific research question]`
+   - Output: Returns the 3 most relevant sources with relevance scores and key information
+   - When to use: To pinpoint the most directly relevant sources for your question
+   - For exactMatch questions, use this to find the exact original wording
+
+3. **general_browser_task**:
+   - Purpose: Perform general web searches beyond academic databases
+   - Usage: `general_browser_task: [search query]`
+   - Output: Returns general web search results
+   - When to use: Only after exhausting academic sources, for supplementary information
+
+4. **book_match_extractor**:
+   - Purpose: Extract exact book match snippets from Google Books with highlighted matching terms
+   - Usage: `book_match_extractor: [exact phrase to search]`
+   - Output: Returns book match snippets with highlighted terms that match the query
+   - When to use: BEST TOOL for exactMatch questions - use this FIRST with the entire question (blanks removed)
+   - Example: For "The Battle of _____ was fought in 1815"
+   - Do this: `book_match_extractor: The Battle of was fought in 1815`
+
+5. **direct_google_books_crawler**:
+   - Purpose: Extract book match snippets directly from a Google Books search URL
+   - Usage: `direct_google_books_crawler: [google books search URL]`
+   - Output: Returns book match snippets from the URL with highlighted terms
+   - When to use: When you already have a Google Books search URL and need to extract match snippets
+
+**Mandatory Workflow for exactMatch questions**:
+1. FIRST use `book_match_extractor` with the ENTIRE question text (with blanks removed)
+   - Example: For "The Battle of _____ was fought in 1815"
+   - Do this: `book_match_extractor: The Battle of was fought in 1815`
+
+2. If no exact match is found, use `relevant_literature_finder` with the same query
+   - Example: `relevant_literature_finder: The Battle of was fought in 1815`
+
+3. If still no exact match, use traditional literature search tools
+
+For all other questions:
+- Start with `literature_searching_task` to get a broad overview of scholarly articles
+- Then use `relevant_literature_finder` with precise query terms to find the most relevant sources
+- Only after exhausting academic sources, use `general_browser_task` if needed
+
+Always integrate findings into a comprehensive answer with proper academic citations
+
+You have been submitted this task by your manager.
+---
+Task:
+{{task}}
+---
+
+Begin by determining if this is an exactMatch question. If it is, use book_match_extractor with the entire question text (blanks removed) FIRST. If not, proceed with the standard workflow starting with literature_searching_task.
+"""
+
+#     ocr_tool = OCRTool(model)
+#     ocr_agent = ToolCallingAgent(
+#         model=model,
+#         tools=[ocr_tool],
+#         max_steps=5,
+#         verbosity_level=2,
+#         planning_interval=2,
+#         name="ocr_agent",
+#         description="""Agent specialized in image text recognition.
+        
+# Features:
+# 1. Extract text content from images
+# 2. Automatically detect languages in images
+# 3. Support multi-language OCR processing
+# 4. Provide image content description when OCR fails
+
+# Use cases:
+# - Extract text from screenshots, scanned documents, or photos
+# - Process charts, images, or documents containing text
+# - Recognize mixed multi-language content in images
+#         """,
+#         provide_run_summary=True,
+#     )
 
     translator_tool = TranslatorTool()
     translator_agent = ToolCallingAgent(
@@ -350,7 +505,7 @@ Begin by identifying any image file paths in this task and using Image_Reverse_S
         verbosity_level=2,
         additional_authorized_imports=AUTHORIZED_IMPORTS,
         planning_interval=4,
-        managed_agents=[text_webbrowser_agent, image_information_agent, ocr_agent, translator_agent],
+        managed_agents=[text_webbrowser_agent, image_information_agent, translator_agent, literature_search_agent],
     )
 
     print("✅ Step K: returning agent")

@@ -107,7 +107,11 @@ def create_agent(model_id="o1"):
     hf_token = st.secrets.get("HF_TOKEN")
     if not hf_token:
         raise ValueError("❌ HF_TOKEN is missing in environment!")
-    login(hf_token)
+
+    try:
+        whoami(hf_token)  # 检查是否已经有效，避免重复 login()
+    except:
+        login(hf_token)  # 只有在未登录或 token 不对时才重新 login()
 
     print("🚩 Step B: making downloads folder")
     os.makedirs(f"./{BROWSER_CONFIG['downloads_folder']}", exist_ok=True)

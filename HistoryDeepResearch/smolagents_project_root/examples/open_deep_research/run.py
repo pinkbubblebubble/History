@@ -509,7 +509,7 @@ Begin by identifying any image file paths in this task and using Image_Reverse_S
         verbosity_level=2,
         additional_authorized_imports=AUTHORIZED_IMPORTS,
         planning_interval=4,
-        managed_agents=[text_webbrowser_agent, image_information_agent, translator_agent, literature_search_agent],
+        managed_agents=[text_webbrowser_agent, image_information_agent, translator_agent],
     )
     manager_agent.prompt_templates["task"] = """You are the manager of a team of specialized agents. Your job is to coordinate their work to solve complex tasks.
     You have access to the following agents:
@@ -517,7 +517,6 @@ Begin by identifying any image file paths in this task and using Image_Reverse_S
 
 2. image_information_agent - For image relevant information on the web and reverse image search
 3. translator
-4.literature_search_agent
 
 CRITICAL RULE FOR IMAGE PROCESSING
 When ANY image file path (.jpg, .png, .jpeg, etc.) appears in a question:

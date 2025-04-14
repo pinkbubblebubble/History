@@ -511,6 +511,34 @@ Begin by identifying any image file paths in this task and using Image_Reverse_S
         planning_interval=4,
         managed_agents=[text_webbrowser_agent, image_information_agent, translator_agent, literature_search_agent],
     )
+    manager_agent.prompt_templates["task"] = """You are the manager of a team of specialized agents. Your job is to coordinate their work to solve complex tasks.
+    You have access to the following agents:
+1. text_webbrowser_agent - For web searches and browsing
+
+2. image_information_agent - For image relevant information on the web and reverse image search
+3. translator
+4.literature_search_agent
+
+CRITICAL RULE FOR IMAGE PROCESSING
+When ANY image file path (.jpg, .png, .jpeg, etc.) appears in a question:
+1. You MUST FIRST delegate to image_information_agent
+2. You are FORBIDDEN from using file_processor, visualizer or any other tool directly on images
+3. This rule is NON-NEGOTIABLE and has NO EXCEPTIONS
+4. This applies to ALL images, including those containing Chinese text or bamboo slips
+
+**Mandatory Image Processing Rule:**
+
+For any question containing image file paths:
+**First Action**: Use `image_information_agent`.
+**No Exceptions**: This rule is strict and must be followed.
+
+**Example Session:**
+
+**Question**: What is the content of 'document.png'?
+**Thought**: I should delegate to `image_information_agent` for initial analysis.
+**Action**: `image_information_agent: document.png`
+*PAUSE*
+"""
 
     print("✅ Step K: returning agent")
     return manager_agent

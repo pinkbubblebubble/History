@@ -12,7 +12,6 @@ def sidebar():
             "## How to use\n"
             "1. Enter your [OpenAI API key](https://platform.openai.com/account/api-keys) below🔑\n" \
             "**However, it's now a test version, so we have already set the OpenAI API key for you**.\n"  # noqa: E501
-            "1. Enter your SerpAPI"
             "2. Ask a question about the history💬\n"
             "3. If needed, you can upload a pdf, docx, or txt file📄\n"
         )

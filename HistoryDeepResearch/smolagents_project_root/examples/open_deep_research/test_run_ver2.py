@@ -7,6 +7,7 @@ import re
 
 
 from sidebar import sidebar
+from summary import generate_summary_from_messages
 
 # Load environment variables
 load_dotenv()
@@ -135,6 +136,11 @@ if user_input := st.chat_input("Type your message here..."):
 
             with st.chat_message("assistant"):
                 st.write(agent_response)
+
+            summary = "The summary of thinking: " + generate_summary_from_messages(st.session_state["messages"], user_input, agent_response)
+            
+            with st.chat_message("assistant"):
+                st.write(summary)
 
             st.session_state.messages.append({"role": "assistant", "content": agent_response})
 

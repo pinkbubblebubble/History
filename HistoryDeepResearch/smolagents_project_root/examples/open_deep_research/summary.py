@@ -18,7 +18,7 @@ formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 task_logger.addHandler(handler)
 
-def generate_summary_from_messages(messages, user_input, answer):
+def generate_summary_from_messages(messages, user_input, answer, model):
     """Generate a summary based on the conversation messages history."""
     try:
         task_logger.info("正在生成会话消息历史的概括...")

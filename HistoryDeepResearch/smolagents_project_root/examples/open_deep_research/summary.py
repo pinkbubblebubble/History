@@ -56,7 +56,7 @@ def generate_summary_from_messages(messages, user_input, answer):
         # reasoning = "\n\n".join([f"User: {msg}" for msg in user_messages] + 
         #                          [f"Assistant: {msg}" for msg in assistant_messages])
         reasoning = messages
-        model = cached_model_initialization(model_id, 16000)
+        model = cached_model_initialization("gpt-4o", 16000)
         
         # 定义消息结构
         messages_for_model = [

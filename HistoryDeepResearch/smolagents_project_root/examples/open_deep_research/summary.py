@@ -9,6 +9,14 @@ from smolagents import (
 )
 import logging  # 用于日志记录
 import traceback  
+@st.cache_data(show_spinner=False)
+def cached_model_initialization(model_id, max_tokens):
+    """Cache the initialization of the LiteLLMModel."""
+    return LiteLLMModel(
+        model_id,
+        custom_role_conversions=custom_role_conversions,
+        max_completion_tokens=max_tokens,
+    )
 
 # 配置日志记录
 task_logger = logging.getLogger("TaskLogger")
@@ -18,7 +26,7 @@ formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 handler.setFormatter(formatter)
 task_logger.addHandler(handler)
 
-def generate_summary_from_messages(messages, user_input, answer, model):
+def generate_summary_from_messages(messages, user_input, answer):
     """Generate a summary based on the conversation messages history."""
     try:
         task_logger.info("正在生成会话消息历史的概括...")
@@ -48,6 +56,7 @@ def generate_summary_from_messages(messages, user_input, answer, model):
         # reasoning = "\n\n".join([f"User: {msg}" for msg in user_messages] + 
         #                          [f"Assistant: {msg}" for msg in assistant_messages])
         reasoning = messages
+        model = cached_model_initialization(model_id, 16000)
         
         # 定义消息结构
         messages_for_model = [

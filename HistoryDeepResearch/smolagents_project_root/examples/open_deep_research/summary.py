@@ -14,7 +14,7 @@ def cached_model_initialization(model_id, max_tokens):
     """Cache the initialization of the LiteLLMModel."""
     return LiteLLMModel(
         model_id,
-        custom_role_conversions=custom_role_conversions,
+        custom_role_conversions={"tool-call": "assistant", "tool-response": "user"},
         max_completion_tokens=max_tokens,
     )
 

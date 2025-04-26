@@ -25,10 +25,7 @@ from scripts.image_web_browser import (
     PageUpTool_Image,
     PageDownTool_Image,
     FinderTool_Image,
-    FindNextTool_Image,
-    # ImageContextExtractorTool,
-    # VisitImageSearchResultsTool,
-    # SaveHTMLTool,
+    FindNextTool_Image
 )
 from scripts.reverse_image import GoogleLensSearchTool
 from scripts.visual_qa import visualizer
@@ -188,10 +185,7 @@ def create_agent(model_id="o1"):
         FinderTool_Image(browser_image),
         FindNextTool_Image(browser_image),
         ArchiveSearchTool_Image(browser_image),
-        TextInspectorTool(model, text_limit),
-        # ImageContextExtractorTool(browser_image),
-        # VisitImageSearchResultsTool(browser_image),
-        # SaveHTMLTool(browser_image),
+        TextInspectorTool(model, text_limit)
     ]
 
     LITERATURE_SEARCH_TOOLS = [

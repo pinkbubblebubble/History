@@ -25,7 +25,10 @@ from scripts.image_web_browser import (
     PageUpTool_Image,
     PageDownTool_Image,
     FinderTool_Image,
-    FindNextTool_Image
+    FindNextTool_Image,
+    ImageContextExtractorTool,
+    VisitImageSearchResultsTool,
+    SaveHTMLTool,
 )
 from scripts.reverse_image import GoogleLensSearchTool
 from scripts.visual_qa import visualizer
@@ -185,7 +188,10 @@ def create_agent(model_id="o1"):
         FinderTool_Image(browser_image),
         FindNextTool_Image(browser_image),
         ArchiveSearchTool_Image(browser_image),
-        TextInspectorTool(model, text_limit)
+        TextInspectorTool(model, text_limit),
+        ImageContextExtractorTool(browser_image),
+        VisitImageSearchResultsTool(browser_image),
+        SaveHTMLTool(browser_image),
     ]
 
     LITERATURE_SEARCH_TOOLS = [
@@ -416,11 +422,20 @@ Use cases:
     - It helps find where an image appears online and what information exists about it.
     - Use this tool first when analyzing any image to discover its online presence.
 
-    2. **VisitTool**:
+    2. **VisitImageSearchResultsTool**:
+    - This tool specifically visits the top results from reverse image search.
+    - It automatically processes multiple links found during reverse image search.
+    - Use this after Image_Reverse_Search_Tool to quickly visit multiple search results.
+
+    3. **VisitTool**:
     - This tool allows you to visit any specific web page by its URL.
     - Use it to access particular web pages of interest that may contain information about the image.
     - Helpful for visiting specific pages mentioned in search results or for deeper investigation.
 
+    4. **ImageContextExtractorTool**:
+    - This tool extracts text and visual information from the surroundings of image URLs found during reverse image search.
+    - It helps analyze the relationship between the image and its surrounding content on web pages.
+    - Use this tool to get specific context about how the image is presented online.
     
     Trigger conditions:
     - Any question containing an image file path
@@ -447,7 +462,14 @@ You are the `image_information_agent`, responsible for extracting and analyzing 
    - When to use: This should be your first step when analyzing any image.
    - Output: Provides links to web pages where the image or similar images appear.
 
-2. **VisitTool**:
+2. **VisitImageSearchResultsTool**:
+   - Purpose: Automatically visit multiple top results from reverse image search.
+   - Usage: `VisitImageSearchResultsTool: [search results from Image_Reverse_Search_Tool]`
+   - When to use: After running Image_Reverse_Search_Tool, to efficiently visit multiple results at once.
+   - What to look for: Overview information from multiple sources about the image.
+   - Advantage: Saves time by visiting multiple pages in one operation.
+
+3. **VisitTool**:
    - Purpose: Visit a specific web page to gather detailed information.
    - Usage: `VisitTool: https://example.com/page-with-image`
    - When to use: When you need to examine a particular web page in detail.
@@ -460,11 +482,19 @@ You are the `image_information_agent`, responsible for extracting and analyzing 
      * Any other relevant contextual information
    - Advantage: Allows focused analysis of a single important page.
 
+4. **ImageContextExtractorTool**:
+   - Purpose: Extract specific information around the image on a web page.
+   - Usage: `ImageContextExtractorTool: [image filename or URL]`
+   - When to use: When you need to focus on the immediate context of an image on a web page.
+   - Output: Provides text and information surrounding the image on the page.
+   - Advantage: Focuses specifically on content directly related to the image.
 
 **Recommended Workflow**:
 1. Start with `Image_Reverse_Search_Tool` to find where the image appears online.
-2. Use `VisitTool` to examine specific important pages in more detail.
-3. Integrate all findings into a comprehensive report about the image.
+2. Use `VisitImageSearchResultsTool` to quickly visit multiple top search results.
+3. Use `VisitTool` to examine specific important pages in more detail.
+4. Use `ImageContextExtractorTool` to extract specific context around the image when necessary.
+5. Integrate all findings into a comprehensive report about the image.
 
 **IMPORTANT: DISTINGUISHING EXAMPLES FROM ACTUAL TASKS**
 The following is just an EXAMPLE to illustrate the workflow. DO NOT process 'historical_document.png' unless it's specifically mentioned in the actual task:
@@ -472,7 +502,9 @@ The following is just an EXAMPLE to illustrate the workflow. DO NOT process 'his
    - *Example Task*: Analyze 'historical_document.png'.
    - *Example Process*:
      - Use `Image_Reverse_Search_Tool: historical_document.png` to find online sources
+     - Use `VisitImageSearchResultsTool: [search results]` to visit multiple top results
      - Use `VisitTool: https://specific-page.com` for any specific page that needs detailed examination
+     - Use `ImageContextExtractorTool: historical_document.png` to extract specific context
      - Integrate findings into a report
 
 Your objective is to process only the actual images mentioned in the current task, not any examples used for illustration.

@@ -175,9 +175,9 @@ def create_agent(model_id="o1"):
         FindNextTool_Image(browser_image),
         ArchiveSearchTool_Image(browser_image),
         TextInspectorTool(model, text_limit),
-        ImageContextExtractorTool(browser_image),
-        VisitImageSearchResultsTool(browser_image),
-        SaveHTMLTool(browser_image),
+        # ImageContextExtractorTool(browser_image),
+        # VisitImageSearchResultsTool(browser_image),
+        # SaveHTMLTool(browser_image),
     ]
 
     LITERATURE_SEARCH_TOOLS = [
@@ -448,14 +448,7 @@ You are the `image_information_agent`, responsible for extracting and analyzing 
    - When to use: This should be your first step when analyzing any image.
    - Output: Provides links to web pages where the image or similar images appear.
 
-2. **VisitImageSearchResultsTool**:
-   - Purpose: Automatically visit multiple top results from reverse image search.
-   - Usage: `VisitImageSearchResultsTool: [search results from Image_Reverse_Search_Tool]`
-   - When to use: After running Image_Reverse_Search_Tool, to efficiently visit multiple results at once.
-   - What to look for: Overview information from multiple sources about the image.
-   - Advantage: Saves time by visiting multiple pages in one operation.
-
-3. **VisitTool**:
+2. **VisitTool**:
    - Purpose: Visit a specific web page to gather detailed information.
    - Usage: `VisitTool: https://example.com/page-with-image`
    - When to use: When you need to examine a particular web page in detail.
@@ -467,13 +460,6 @@ You are the `image_information_agent`, responsible for extracting and analyzing 
      * Dating and authentication details
      * Any other relevant contextual information
    - Advantage: Allows focused analysis of a single important page.
-
-4. **ImageContextExtractorTool**:
-   - Purpose: Extract specific information around the image on a web page.
-   - Usage: `ImageContextExtractorTool: [image filename or URL]`
-   - When to use: When you need to focus on the immediate context of an image on a web page.
-   - Output: Provides text and information surrounding the image on the page.
-   - Advantage: Focuses specifically on content directly related to the image.
 
 **Recommended Workflow**:
 1. Start with `Image_Reverse_Search_Tool` to find where the image appears online.
@@ -488,9 +474,7 @@ The following is just an EXAMPLE to illustrate the workflow. DO NOT process 'his
    - *Example Task*: Analyze 'historical_document.png'.
    - *Example Process*:
      - Use `Image_Reverse_Search_Tool: historical_document.png` to find online sources
-     - Use `VisitImageSearchResultsTool: [search results]` to visit multiple top results
-     - Use `VisitTool: https://specific-page.com` for any specific page that needs detailed examination
-     - Use `ImageContextExtractorTool: historical_document.png` to extract specific context
+     - Use `VisitTool: https://specific-page.com` for any specific page returned by `Image_Reverse_Search_Tool
      - Integrate findings into a report
 
 Your objective is to process only the actual images mentioned in the current task, not any examples used for illustration.
